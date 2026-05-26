@@ -14,7 +14,7 @@ if uploaded_file:
     img_base64 = base64.b64encode(img_bytes).decode("utf-8")
 
     # Roboflow API aufrufen
-    api_key = st.secrets["OJPob1K0te2vvBOc175w"]
+api_key = st.secrets["ROBOFLOW_API_KEY"]
     url = "https://classify.roboflow.com/banana-ripeness-classification/3"
     
     response = requests.post(
