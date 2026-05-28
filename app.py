@@ -25,7 +25,7 @@ ROBOFLOW_TO_STUFE = {
 }
 
 # =========================================================
-# TAGE BIS OPTIMAL
+# TAGE BIS ZUM PERFEKTEN REIFEGRAD
 # =========================================================
 
 TAGE_BIS_OPTIMAL = {
@@ -38,27 +38,14 @@ TAGE_BIS_OPTIMAL = {
 }
 
 # =========================================================
-# WIE LANGE OPTIMAL?
-# =========================================================
-
-OPTIMAL_DAUER = {
-    "unripe": 0,
-    "freshunripe": 1,
-    "freshripe": 2,
-    "ripe": 1,
-    "overripe": 0,
-    "rotten": 0
-}
-
-# =========================================================
-# SESSION STORAGE
+# SESSION SPEICHER
 # =========================================================
 
 if "bananas" not in st.session_state:
     st.session_state.bananas = []
 
 # =========================================================
-# UPLOAD
+# BILDUPLOAD
 # =========================================================
 
 uploaded_file = st.file_uploader(
@@ -110,54 +97,70 @@ if uploaded_file:
 
         tage = TAGE_BIS_OPTIMAL[top_class]
 
+        # =========================================================
+        # WANN IST DIE BANANE PERFEKT?
+        # =========================================================
+
         st.divider()
-        st.subheader("⏳ Wann perfekt essbar?")
+        st.subheader("⏳ Wann ist die Banane perfekt?")
 
         if tage > 0:
-            st.info(f"Diese Banane wird in ungefähr **{tage} Tagen** perfekt essbar sein.")
+            st.info(
+                f"Diese Banane wird voraussichtlich in "
+                f"**{tage} Tagen** perfekt essbar sein."
+            )
 
         elif tage == 0:
             st.success("✅ Diese Banane ist heute perfekt essbar!")
 
         else:
-            st.warning("⚠️ Diese Banane ist bereits über dem optimalen Reifegrad.")
+            st.warning(
+                "⚠️ Diese Banane ist wahrscheinlich bereits "
+                "über dem optimalen Reifegrad."
+            )
 
         # =========================================================
-        # SPEICHERN
+        # BANANE SPEICHERN
         # =========================================================
 
         st.session_state.bananas.append({
             "class": top_class,
-            "days_until_optimal": tage,
-            "optimal_duration": OPTIMAL_DAUER[top_class]
+            "optimal_day": tage
         })
 
 # =========================================================
-# KALENDER
+# 7-TAGE-KALENDER
 # =========================================================
 
 if st.session_state.bananas:
 
     st.divider()
-    st.subheader("📅 Nächste 7 Tage")
+    st.subheader("📅 7-Tage-Bananen-Kalender")
 
     today = datetime.now()
 
+    gruene_tage = []
+
+    # Für jeden Tag prüfen:
     for i in range(7):
 
         current_day = today + timedelta(days=i)
 
         banana_available = False
 
+        # Nur EXAKT der perfekte Tag zählt
         for banana in st.session_state.bananas:
 
-            start = banana["days_until_optimal"]
-            ende = start + banana["optimal_duration"]
-
-            if start <= i <= ende:
+            if banana["optimal_day"] == i:
                 banana_available = True
 
+        # =====================================================
+        # GRÜNER TAG
+        # =====================================================
+
         if banana_available:
+
+            gruene_tage.append(i)
 
             st.markdown(
                 f"""
@@ -175,6 +178,10 @@ if st.session_state.bananas:
                 """,
                 unsafe_allow_html=True
             )
+
+        # =====================================================
+        # ROTER TAG
+        # =====================================================
 
         else:
 
@@ -196,11 +203,11 @@ if st.session_state.bananas:
             )
 
 # =========================================================
-# EMPFEHLUNG
+# KAUFEMPFEHLUNG
 # =========================================================
 
     st.divider()
-    st.subheader("🛒 Welche Banane heute kaufen?")
+    st.subheader("🛒 Kaufempfehlung")
 
     fehlende_tage = []
 
@@ -210,10 +217,7 @@ if st.session_state.bananas:
 
         for banana in st.session_state.bananas:
 
-            start = banana["days_until_optimal"]
-            ende = start + banana["optimal_duration"]
-
-            if start <= i <= ende:
+            if banana["optimal_day"] == i:
                 found = True
 
         if not found:
@@ -221,12 +225,16 @@ if st.session_state.bananas:
 
     if len(fehlende_tage) == 0:
 
-        st.success("🎉 Für alle nächsten 7 Tage ist eine perfekte Banane vorhanden!")
+        st.success(
+            "🎉 Du hast für die nächsten 7 Tage "
+            "genügend perfekt reife Bananen!"
+        )
 
     else:
 
         erster_fehlender_tag = fehlende_tage[0]
 
+        # Welche Banane sollte heute gekauft werden?
         if erster_fehlender_tag >= 5:
             empfehlung = "🟢 Stufe 1 – Grün"
 
@@ -240,17 +248,18 @@ if st.session_state.bananas:
             empfehlung = "🟡 Stufe 5 – Vollgelb"
 
         st.info(
-            f"Du solltest heute folgende Banane kaufen:\n\n"
+            f"Für eine perfekte Versorgung solltest du heute "
+            f"folgende Banane kaufen:\n\n"
             f"### {empfehlung}"
         )
 
 # =========================================================
-# RESET
+# RESET BUTTON
 # =========================================================
 
 st.divider()
 
-if st.button("🗑️ Alle gespeicherten Bananen löschen"):
+if st.button("🗑️ Gespeicherte Bananen löschen"):
 
     st.session_state.bananas = []
     st.rerun()
