@@ -30,7 +30,8 @@ if uploaded_file:
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         result = response.json()
-
+    
+st.write(result)
     st.divider()
     st.subheader("📊 Ergebnis")
 
