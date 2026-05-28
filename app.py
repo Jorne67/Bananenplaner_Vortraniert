@@ -24,7 +24,7 @@ if uploaded_file:
         img_base64 = base64.b64encode(img_bytes).decode("utf-8")
 
         response = requests.post(
-            f"https://classify.roboflow.com/banana-ripeness-classification/3",
+    f"https://classify.roboflow.com/banana-ripeness-classification/5",
             params={"api_key": api_key},
             data=img_base64,
             headers={"Content-Type": "application/x-www-form-urlencoded"}
