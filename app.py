@@ -4,7 +4,7 @@ import base64
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="Banana Ripeness Detection",
+    page_title="Banana Ripeness Planner",
     page_icon="🍌",
     layout="centered"
 )
@@ -25,10 +25,9 @@ ROBOFLOW_TO_STUFE = {
 }
 
 # =========================================================
-# WANN WIRD DIE BANANE OPTIMAL?
+# TAGE BIS OPTIMAL
 # =========================================================
 
-# Anzahl Tage bis optimal essbar
 TAGE_BIS_OPTIMAL = {
     "unripe": 5,
     "freshunripe": 3,
@@ -38,10 +37,13 @@ TAGE_BIS_OPTIMAL = {
     "rotten": -2
 }
 
-# Wie lange bleibt sie optimal?
+# =========================================================
+# WIE LANGE OPTIMAL?
+# =========================================================
+
 OPTIMAL_DAUER = {
-    "unripe": 2,
-    "freshunripe": 2,
+    "unripe": 0,
+    "freshunripe": 1,
     "freshripe": 2,
     "ripe": 1,
     "overripe": 0,
@@ -49,14 +51,14 @@ OPTIMAL_DAUER = {
 }
 
 # =========================================================
-# SESSION SPEICHER
+# SESSION STORAGE
 # =========================================================
 
 if "bananas" not in st.session_state:
     st.session_state.bananas = []
 
 # =========================================================
-# BILDUPLOAD
+# UPLOAD
 # =========================================================
 
 uploaded_file = st.file_uploader(
@@ -108,24 +110,20 @@ if uploaded_file:
 
         tage = TAGE_BIS_OPTIMAL[top_class]
 
-        # =========================================================
-        # TEXT: WANN OPTIMAL?
-        # =========================================================
-
         st.divider()
-        st.subheader("⏳ Wann ist die Banane perfekt?")
+        st.subheader("⏳ Wann perfekt essbar?")
 
         if tage > 0:
-            st.info(f"Diese Banane wird voraussichtlich in **{tage} Tagen** perfekt essbar sein.")
+            st.info(f"Diese Banane wird in ungefähr **{tage} Tagen** perfekt essbar sein.")
 
         elif tage == 0:
             st.success("✅ Diese Banane ist heute perfekt essbar!")
 
-        elif tage < 0:
-            st.warning("⚠️ Diese Banane ist wahrscheinlich bereits über dem optimalen Reifegrad.")
+        else:
+            st.warning("⚠️ Diese Banane ist bereits über dem optimalen Reifegrad.")
 
         # =========================================================
-        # BANANE SPEICHERN
+        # SPEICHERN
         # =========================================================
 
         st.session_state.bananas.append({
@@ -135,17 +133,15 @@ if uploaded_file:
         })
 
 # =========================================================
-# 7-TAGE KALENDER
+# KALENDER
 # =========================================================
 
 if st.session_state.bananas:
 
     st.divider()
-    st.subheader("📅 7-Tage-Bananen-Kalender")
+    st.subheader("📅 Nächste 7 Tage")
 
     today = datetime.now()
-
-    gruene_tage = []
 
     for i in range(7):
 
@@ -162,7 +158,6 @@ if st.session_state.bananas:
                 banana_available = True
 
         if banana_available:
-            gruene_tage.append(i)
 
             st.markdown(
                 f"""
@@ -205,7 +200,7 @@ if st.session_state.bananas:
 # =========================================================
 
     st.divider()
-    st.subheader("🛒 Kaufempfehlung")
+    st.subheader("🛒 Welche Banane heute kaufen?")
 
     fehlende_tage = []
 
@@ -226,13 +221,12 @@ if st.session_state.bananas:
 
     if len(fehlende_tage) == 0:
 
-        st.success("🎉 Du hast für die nächsten 7 Tage genügend perfekt reife Bananen!")
+        st.success("🎉 Für alle nächsten 7 Tage ist eine perfekte Banane vorhanden!")
 
     else:
 
         erster_fehlender_tag = fehlende_tage[0]
 
-        # Welche Banane sollte man heute kaufen?
         if erster_fehlender_tag >= 5:
             empfehlung = "🟢 Stufe 1 – Grün"
 
@@ -246,17 +240,17 @@ if st.session_state.bananas:
             empfehlung = "🟡 Stufe 5 – Vollgelb"
 
         st.info(
-            f"Für eine perfekte Versorgung solltest du heute folgende Banane kaufen:\n\n"
+            f"Du solltest heute folgende Banane kaufen:\n\n"
             f"### {empfehlung}"
         )
 
 # =========================================================
-# RESET BUTTON
+# RESET
 # =========================================================
 
 st.divider()
 
-if st.button("🗑️ Gespeicherte Bananen löschen"):
+if st.button("🗑️ Alle gespeicherten Bananen löschen"):
 
     st.session_state.bananas = []
     st.rerun()
