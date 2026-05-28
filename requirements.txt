@@ -1,3 +1,2 @@
 streamlit
-inference-sdk
-opencv-python-headless
+requests
