@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🍌 Banana Ripeness Planner")
+st.title("🍌 Jarne's intelligenter Bananen Frühstücksplaner 2")
 
 # =========================================================
 # REIFEGRAD TEXTE
