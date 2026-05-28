@@ -4,7 +4,7 @@ import base64
 from datetime import datetime, timedelta
 
 st.set_page_config(
-    page_title="Banana Ripeness Planner",
+    page_title="Jarne's intelligenter Bananen Frühstücksplaner 2",
     page_icon="🍌",
     layout="centered"
 )
