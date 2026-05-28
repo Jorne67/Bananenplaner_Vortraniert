@@ -1,10 +1,19 @@
 import streamlit as st
 import requests
 import base64
+from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Banana Ripeness Detection", page_icon="🍌")
+st.set_page_config(
+    page_title="Banana Ripeness Detection",
+    page_icon="🍌",
+    layout="centered"
+)
 
-st.title("🍌 Banana Ripeness Detection – Roboflow")
+st.title("🍌 Banana Ripeness Planner")
+
+# =========================================================
+# REIFEGRAD TEXTE
+# =========================================================
 
 ROBOFLOW_TO_STUFE = {
     "unripe":      "🟢 Stufe 1 – Grün",
@@ -15,6 +24,41 @@ ROBOFLOW_TO_STUFE = {
     "rotten":      "🟤 Stufe 7 – Braun",
 }
 
+# =========================================================
+# WANN WIRD DIE BANANE OPTIMAL?
+# =========================================================
+
+# Anzahl Tage bis optimal essbar
+TAGE_BIS_OPTIMAL = {
+    "unripe": 5,
+    "freshunripe": 3,
+    "freshripe": 1,
+    "ripe": 0,
+    "overripe": -1,
+    "rotten": -2
+}
+
+# Wie lange bleibt sie optimal?
+OPTIMAL_DAUER = {
+    "unripe": 2,
+    "freshunripe": 2,
+    "freshripe": 2,
+    "ripe": 1,
+    "overripe": 0,
+    "rotten": 0
+}
+
+# =========================================================
+# SESSION SPEICHER
+# =========================================================
+
+if "bananas" not in st.session_state:
+    st.session_state.bananas = []
+
+# =========================================================
+# BILDUPLOAD
+# =========================================================
+
 uploaded_file = st.file_uploader(
     "Lade ein Bild einer Banane hoch",
     type=["jpg", "jpeg", "png"]
@@ -22,7 +66,11 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file:
 
-    st.image(uploaded_file, caption="Hochgeladenes Bild", use_container_width=True)
+    st.image(
+        uploaded_file,
+        caption="Hochgeladenes Bild",
+        use_container_width=True
+    )
 
     with st.spinner("🔍 Analyse läuft..."):
 
@@ -46,11 +94,7 @@ if uploaded_file:
         result = response.json()
 
     st.divider()
-    st.subheader("📊 Ergebnis")
-
-    # DEBUG ANZEIGE
-    with st.expander("Technische API-Antwort"):
-        st.json(result)
+    st.subheader("📊 Analyse")
 
     if "top" in result:
 
@@ -59,33 +103,160 @@ if uploaded_file:
 
         label = ROBOFLOW_TO_STUFE.get(top_class, top_class)
 
-        st.success(f"Erkannter Reifegrad: {label}")
-
+        st.success(f"🍌 Erkannter Reifegrad: {label}")
         st.write(f"Konfidenz: {confidence:.0%}")
 
+        tage = TAGE_BIS_OPTIMAL[top_class]
+
+        # =========================================================
+        # TEXT: WANN OPTIMAL?
+        # =========================================================
+
         st.divider()
-        st.subheader("📈 Alle Wahrscheinlichkeiten")
+        st.subheader("⏳ Wann ist die Banane perfekt?")
 
-        predictions = result.get("predictions", {})
+        if tage > 0:
+            st.info(f"Diese Banane wird voraussichtlich in **{tage} Tagen** perfekt essbar sein.")
 
-        if isinstance(predictions, dict):
+        elif tage == 0:
+            st.success("✅ Diese Banane ist heute perfekt essbar!")
 
-            for key, pred in predictions.items():
+        elif tage < 0:
+            st.warning("⚠️ Diese Banane ist wahrscheinlich bereits über dem optimalen Reifegrad.")
 
-                if isinstance(pred, dict):
-                    st.write(
-                        f"{pred.get('class', key)}: "
-                        f"{pred.get('confidence', 0):.0%}"
-                    )
+        # =========================================================
+        # BANANE SPEICHERN
+        # =========================================================
+
+        st.session_state.bananas.append({
+            "class": top_class,
+            "days_until_optimal": tage,
+            "optimal_duration": OPTIMAL_DAUER[top_class]
+        })
+
+# =========================================================
+# 7-TAGE KALENDER
+# =========================================================
+
+if st.session_state.bananas:
+
+    st.divider()
+    st.subheader("📅 7-Tage-Bananen-Kalender")
+
+    today = datetime.now()
+
+    gruene_tage = []
+
+    for i in range(7):
+
+        current_day = today + timedelta(days=i)
+
+        banana_available = False
+
+        for banana in st.session_state.bananas:
+
+            start = banana["days_until_optimal"]
+            ende = start + banana["optimal_duration"]
+
+            if start <= i <= ende:
+                banana_available = True
+
+        if banana_available:
+            gruene_tage.append(i)
+
+            st.markdown(
+                f"""
+                <div style="
+                    background-color:#9BE39B;
+                    padding:15px;
+                    border-radius:10px;
+                    margin-bottom:10px;
+                    color:black;
+                    font-weight:bold;
+                ">
+                ✅ {current_day.strftime('%d.%m.%Y')}<br>
+                Perfekte Banane verfügbar
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        else:
+
+            st.markdown(
+                f"""
+                <div style="
+                    background-color:#FF9B9B;
+                    padding:15px;
+                    border-radius:10px;
+                    margin-bottom:10px;
+                    color:black;
+                    font-weight:bold;
+                ">
+                ❌ {current_day.strftime('%d.%m.%Y')}<br>
+                Keine perfekte Banane
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+# =========================================================
+# EMPFEHLUNG
+# =========================================================
+
+    st.divider()
+    st.subheader("🛒 Kaufempfehlung")
+
+    fehlende_tage = []
+
+    for i in range(7):
+
+        found = False
+
+        for banana in st.session_state.bananas:
+
+            start = banana["days_until_optimal"]
+            ende = start + banana["optimal_duration"]
+
+            if start <= i <= ende:
+                found = True
+
+        if not found:
+            fehlende_tage.append(i)
+
+    if len(fehlende_tage) == 0:
+
+        st.success("🎉 Du hast für die nächsten 7 Tage genügend perfekt reife Bananen!")
 
     else:
 
-        st.error("❌ Fehler bei der Analyse")
+        erster_fehlender_tag = fehlende_tage[0]
 
-        if "message" in result:
-            st.write(f"API Meldung: {result['message']}")
+        # Welche Banane sollte man heute kaufen?
+        if erster_fehlender_tag >= 5:
+            empfehlung = "🟢 Stufe 1 – Grün"
 
-        st.write("Bitte überprüfe:")
-        st.write("- API-Key korrekt?")
-        st.write("- Modell-Version korrekt?")
-        st.write("- Modell deployed?")
+        elif erster_fehlender_tag >= 3:
+            empfehlung = "🟡🟢 Stufe 2/3 – Mehr grün als gelb"
+
+        elif erster_fehlender_tag >= 1:
+            empfehlung = "🟡 Stufe 4 – Gelb mit grünen Spitzen"
+
+        else:
+            empfehlung = "🟡 Stufe 5 – Vollgelb"
+
+        st.info(
+            f"Für eine perfekte Versorgung solltest du heute folgende Banane kaufen:\n\n"
+            f"### {empfehlung}"
+        )
+
+# =========================================================
+# RESET BUTTON
+# =========================================================
+
+st.divider()
+
+if st.button("🗑️ Gespeicherte Bananen löschen"):
+
+    st.session_state.bananas = []
+    st.rerun()
