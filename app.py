@@ -31,8 +31,7 @@ if uploaded_file:
         )
         result = response.json()
     
-st.write(result)
-    st.divider()
+st.write(result) 
     st.subheader("📊 Ergebnis")
 
     if "top" in result:
